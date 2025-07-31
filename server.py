@@ -4,6 +4,7 @@ import os
 import json
 from datetime import datetime
 import requests
+import traceback  # Added for better error logging
 
 app = Flask(__name__)
 CORS(app)
@@ -19,7 +20,10 @@ def call_claude_api(messages, max_tokens=1000):
     """
     Call the Anthropic Claude API with conversation messages
     """
+    print(f"[DEBUG] Calling Claude API with {len(messages)} messages")
+    
     if not ANTHROPIC_API_KEY:
+        print("[ERROR] ANTHROPIC_API_KEY environment variable not set")
         raise Exception("ANTHROPIC_API_KEY environment variable not set")
     
     headers = {
@@ -50,22 +54,29 @@ def call_claude_api(messages, max_tokens=1000):
     if system_message:
         payload["system"] = system_message
     
+    print(f"[DEBUG] Sending request to Claude API...")
+    
     try:
         response = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload)
+        print(f"[DEBUG] Claude API response status: {response.status_code}")
+        
         response.raise_for_status()
         
         data = response.json()
-        return data["content"][0]["text"]
+        result = data["content"][0]["text"]
+        print(f"[DEBUG] Claude API success, response length: {len(result)} characters")
+        return result
         
     except requests.exceptions.RequestException as e:
-        print(f"Error calling Claude API: {str(e)}")
+        print(f"[ERROR] Claude API request failed: {str(e)}")
         if hasattr(e, 'response') and e.response is not None:
-            print(f"Response status: {e.response.status_code}")
-            print(f"Response body: {e.response.text}")
+            print(f"[ERROR] Response status: {e.response.status_code}")
+            print(f"[ERROR] Response body: {e.response.text}")
         raise Exception(f"Claude API error: {str(e)}")
 
 @app.route("/", methods=["GET"])
 def home():
+    print("[DEBUG] Home endpoint called")
     return jsonify({
         "status": "healthy",
         "service": "Ivey Growth Mindset Learning API",
@@ -76,6 +87,7 @@ def home():
 
 @app.route("/health", methods=["GET"])
 def health_check():
+    print("[DEBUG] Health check endpoint called")
     return jsonify({
         "status": "healthy",
         "service": "Ivey Growth Mindset Learning API",
@@ -84,57 +96,25 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     })
 
-@app.route("/chat", methods=["POST"])
-def chat():
-    """
-    Main chat endpoint for Claude API interactions
-    """
-    try:
-        data = request.json
-        messages = data.get("messages", [])
-        session_id = data.get("session_id", "default")
-        
-        if not messages:
-            return jsonify({"error": "No messages provided"}), 400
-        
-        # Call Claude API
-        response_text = call_claude_api(messages)
-        
-        # Store conversation history for this session
-        if session_id not in conversation_histories:
-            conversation_histories[session_id] = []
-        
-        # Store the user's message and Claude's response
-        conversation_histories[session_id].extend([
-            {"role": "user", "content": messages[-1]["content"], "timestamp": datetime.now().isoformat()},
-            {"role": "assistant", "content": response_text, "timestamp": datetime.now().isoformat()}
-        ])
-        
-        return jsonify({
-            "response": response_text,
-            "session_id": session_id,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"Error in chat endpoint: {str(e)}")
-        return jsonify({
-            "error": "Internal server error",
-            "message": "I apologize, but I'm having technical difficulties right now. Please try again in a moment.",
-            "details": str(e) if app.debug else None
-        }), 500
-
 @app.route("/analyze_challenge", methods=["POST"])
 def analyze_challenge():
     """
     Specialized endpoint for analyzing student challenges
     """
+    print("[DEBUG] Analyze challenge endpoint called")
+    
     try:
         data = request.json
+        print(f"[DEBUG] Request data: {data}")
+        
         challenge = data.get("challenge", "")
         session_id = data.get("session_id", "default")
         
+        print(f"[DEBUG] Challenge: {challenge[:100]}...")  # First 100 chars
+        print(f"[DEBUG] Session ID: {session_id}")
+        
         if not challenge:
+            print("[ERROR] No challenge provided")
             return jsonify({"error": "No challenge provided"}), 400
         
         system_prompt = """You are a distinguished faculty professor at Ivey Business School, specializing in case-based learning and growth mindset development. Your role is to help students learn from their challenges using Ivey's pedagogical approach, which emphasizes:
@@ -171,7 +151,9 @@ Please provide a thoughtful, professorial response that helps them understand th
             {"role": "user", "content": user_prompt}
         ]
         
+        print("[DEBUG] Calling Claude API...")
         response_text = call_claude_api(messages)
+        print("[DEBUG] Claude API call successful")
         
         # Store conversation history
         if session_id not in conversation_histories:
@@ -182,6 +164,8 @@ Please provide a thoughtful, professorial response that helps them understand th
             {"role": "assistant", "content": response_text, "timestamp": datetime.now().isoformat()}
         ])
         
+        print(f"[DEBUG] Stored conversation history for session {session_id}")
+        
         return jsonify({
             "response": response_text,
             "session_id": session_id,
@@ -190,11 +174,12 @@ Please provide a thoughtful, professorial response that helps them understand th
         })
         
     except Exception as e:
-        print(f"Error in analyze_challenge endpoint: {str(e)}")
+        print(f"[ERROR] Exception in analyze_challenge: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return jsonify({
             "error": "Analysis failed",
             "message": "I'm having trouble analyzing your challenge right now. Please try again.",
-            "details": str(e) if app.debug else None
+            "details": str(e)
         }), 500
 
 @app.route("/assess_reflection", methods=["POST"])
@@ -202,6 +187,8 @@ def assess_reflection():
     """
     Specialized endpoint for assessing student reflections
     """
+    print("[DEBUG] Assess reflection endpoint called")
+    
     try:
         data = request.json
         reflection = data.get("reflection", "")
@@ -252,11 +239,12 @@ Please provide constructive, encouraging feedback that helps them deepen their u
         })
         
     except Exception as e:
-        print(f"Error in assess_reflection endpoint: {str(e)}")
+        print(f"[ERROR] Exception in assess_reflection: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return jsonify({
             "error": "Assessment failed",
             "message": "I'm having trouble assessing your reflection right now. Please try again.",
-            "details": str(e) if app.debug else None
+            "details": str(e)
         }), 500
 
 @app.route("/finalize_session", methods=["POST"])
@@ -264,6 +252,8 @@ def finalize_session():
     """
     Specialized endpoint for finalizing learning sessions
     """
+    print("[DEBUG] Finalize session endpoint called")
+    
     try:
         data = request.json
         action_plan = data.get("action_plan", "")
@@ -318,51 +308,21 @@ Please provide an inspiring, professional summary that reinforces their learning
         })
         
     except Exception as e:
-        print(f"Error in finalize_session endpoint: {str(e)}")
+        print(f"[ERROR] Exception in finalize_session: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return jsonify({
             "error": "Session finalization failed",
             "message": "I'm having trouble finalizing your session right now. Please try again.",
-            "details": str(e) if app.debug else None
+            "details": str(e)
         }), 500
-
-@app.route("/get_session_history", methods=["GET"])
-def get_session_history():
-    """
-    Get conversation history for a session
-    """
-    session_id = request.args.get("session_id", "default")
-    
-    history = conversation_histories.get(session_id, [])
-    
-    return jsonify({
-        "session_id": session_id,
-        "history": history,
-        "message_count": len(history),
-        "timestamp": datetime.now().isoformat()
-    })
-
-@app.route("/reset_session", methods=["POST"])
-def reset_session():
-    """
-    Reset a conversation session
-    """
-    data = request.json
-    session_id = data.get("session_id", "default")
-    
-    if session_id in conversation_histories:
-        del conversation_histories[session_id]
-    
-    return jsonify({
-        "message": f"Session {session_id} reset successfully",
-        "session_id": session_id,
-        "timestamp": datetime.now().isoformat()
-    })
 
 @app.route("/test_claude", methods=["GET"])
 def test_claude():
     """
     Test endpoint to verify Claude API connectivity
     """
+    print("[DEBUG] Test Claude endpoint called")
+    
     try:
         test_messages = [
             {
@@ -385,6 +345,8 @@ def test_claude():
         })
         
     except Exception as e:
+        print(f"[ERROR] Claude test failed: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         return jsonify({
             "status": "error",
             "message": "Claude API test failed",
