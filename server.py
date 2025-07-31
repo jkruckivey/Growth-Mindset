@@ -45,11 +45,11 @@ def call_claude_api(messages, max_tokens=1000):
                 "content": message["content"]
             })
     
-    payload = {
-        "model": "claude-3-sonnet-20240229",
-        "max_tokens": max_tokens,
-        "messages": claude_messages
-    }
+  payload = {
+    "model": "claude-sonnet-4-20250514",  # ← Updated model name
+    "max_tokens": max_tokens,
+    "messages": claude_messages
+}
     
     if system_message:
         payload["system"] = system_message
