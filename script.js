@@ -3,7 +3,7 @@ let currentStep = 1;
 let conversationHistory = [];
 
 // API Configuration - Replace with your deployment URL
-const API_BASE_URL = 'http://localhost:5000'; // Change this to your Render URL
+const API_BASE_URL = 'https://growth-mindset.onrender.com'; // Change this to your Render URL
 
 // Progress tracking
 function updateProgress() {
