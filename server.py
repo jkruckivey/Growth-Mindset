@@ -370,122 +370,6 @@ if __name__ == "__main__":
         host="0.0.0.0", 
         port=int(os.environ.get("PORT", 5000)),
         debug=os.environ.get("DEBUG", "False").lower() == "true"
-    ) perspectives
-5. Action-oriented decision making
-
-When analyzing student challenges:
-- Focus on the learning process, not just the outcome
-- Help identify specific misconceptions or knowledge gaps
-- Connect challenges to broader business principles
-- Encourage growth mindset thinking
-- Provide constructive, supportive feedback
-- Reference case analysis methodology when relevant
-
-Be supportive, insightful, and professorial in tone. Encourage students to see challenges as opportunities for growth."""
-
-        user_prompt = f"""A student at Ivey Business School is sharing a learning challenge they encountered. Please analyze this challenge and provide insights on:
-
-1. What specific misconceptions or knowledge gaps might have contributed to their struggle
-2. How this challenge relates to broader business concepts or case analysis skills
-3. What they can learn from this experience using a growth mindset approach
-4. Specific areas they should focus on for improvement
-
-Student's challenge: "{challenge}"
-
-Please provide a thoughtful, professorial response that helps them understand their learning process and sets them up for effective reflection."""
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-        
-        response_text = call_claude_api(messages)
-        
-        # Store conversation history
-        if session_id not in conversation_histories:
-            conversation_histories[session_id] = []
-        
-        conversation_histories[session_id].extend([
-            {"role": "user", "content": f"Challenge: {challenge}", "timestamp": datetime.now().isoformat()},
-            {"role": "assistant", "content": response_text, "timestamp": datetime.now().isoformat()}
-        ])
-        
-        return jsonify({
-            "response": response_text,
-            "session_id": session_id,
-            "step": "challenge_analysis",
-            "timestamp": datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"Error in analyze_challenge endpoint: {str(e)}")
-        return jsonify({
-            "error": "Analysis failed",
-            "message": "I'm having trouble analyzing your challenge right now. Please try again.",
-            "details": str(e) if app.debug else None
-        }), 500
-
-@app.route("/assess_reflection", methods=["POST"])
-def assess_reflection():
-    """
-    Specialized endpoint for assessing student reflections
-    """
-    try:
-        data = request.json
-        reflection = data.get("reflection", "")
-        session_id = data.get("session_id", "default")
-        
-        if not reflection:
-            return jsonify({"error": "No reflection provided"}), 400
-        
-        # Get conversation history for context
-        history = conversation_histories.get(session_id, [])
-        
-        system_prompt = """You are a distinguished faculty professor at Ivey Business School. You are now assessing a student's reflection on their learning challenge. Your role is to provide constructive feedback that helps them deepen their self-awareness and growth mindset development."""
-
-        user_prompt = f"""The student has written a reflection based on our previous analysis. Please assess their reflection and provide feedback on:
-
-1. How well they've understood the learning insights from the analysis
-2. The depth of their self-awareness about their learning process
-3. Whether they're demonstrating growth mindset thinking
-4. Areas where their reflection could be strengthened
-5. Specific suggestions for how they can apply these insights going forward
-
-Student's reflection: "{reflection}"
-
-Please provide constructive, encouraging feedback that helps them deepen their understanding and prepare for action planning."""
-
-        # Build messages with conversation history
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        # Add relevant history
-        for msg in history[-4:]:  # Last 4 messages for context
-            messages.append({"role": msg["role"], "content": msg["content"]})
-        
-        messages.append({"role": "user", "content": user_prompt})
-        
-        response_text = call_claude_api(messages)
-        
-        # Store in conversation history
-        conversation_histories[session_id].extend([
-            {"role": "user", "content": f"Reflection: {reflection}", "timestamp": datetime.now().isoformat()},
-            {"role": "assistant", "content": response_text, "timestamp": datetime.now().isoformat()}
-        ])
-        
-        return jsonify({
-            "response": response_text,
-            "session_id": session_id,
-            "step": "reflection_assessment",
-            "timestamp": datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        print(f"Error in assess_reflection endpoint: {str(e)}")
-        return jsonify({
-            "error": "Assessment failed",
-            "message": "I'm having trouble assessing your reflection right now. Please try again.",
-            "details": str(e) if app.debug else None
-        }), 500
 
 @app.route("/finalize_session", methods=["POST"])
 def finalize_session():
@@ -633,7 +517,7 @@ if __name__ == "__main__":
     print(f"🌐 Server will run on port {os.environ.get('PORT', 5000)}")
     
     app.run(
-        host="0.0.0.0", 
+        host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000)),
         debug=os.environ.get("DEBUG", "False").lower() == "true"
     )
