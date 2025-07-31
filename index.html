@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growth Mindset Learning - Ivey Business School</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">I</div>
+            <div class="header-text">
+                <h1>Growth Mindset Learning Platform</h1>
+                <p>Ivey Business School • Develop resilience through reflection</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-card">
+            <div class="intro-section">
+                <h2>Transform Challenges into Growth</h2>
+                <p>Work with our AI faculty professor to explore your learning challenges, understand your misconceptions, and develop a stronger growth mindset through structured reflection and case-based analysis.</p>
+            </div>
+
+            <div class="professor-card">
+                <div class="professor-info">
+                    <div class="professor-avatar">🎓</div>
+                    <div class="professor-details">
+                        <h3>Professor Claude</h3>
+                        <p>AI Faculty Professor • Specializing in Case Analysis & Growth Mindset Development</p>
+                    </div>
+                </div>
+                <p><strong>About your AI professor:</strong> I'm here to help you develop resilience and a growth mindset by examining your learning challenges through the lens of Ivey's case-based pedagogy. Together, we'll explore what went wrong, why it happened, and how you can improve.</p>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+
+            <!-- Step 1: Share Your Challenge -->
+            <div class="step-container">
+                <div class="step-card active" id="step1">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <h3 class="step-title">Share Your Learning Challenge</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="challenge">Describe a question, problem, or concept you struggled with recently</label>
+                        <textarea 
+                            class="form-textarea" 
+                            id="challenge" 
+                            placeholder="For example: 'I struggled with the financial analysis in the Tesla case study. I couldn't determine whether their cash flow projections were realistic, and I misunderstood how to evaluate their capital allocation strategy...'"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="analyzeChallenge()">
+                        <span id="analyzeText">Get AI Analysis</span>
+                        <div class="spinner" id="analyzeSpinner" style="display: none;"></div>
+                    </button>
+                    
+                    <div class="ai-response" id="analysisResponse">
+                        <h4>🔍 Professor's Analysis</h4>
+                        <div id="analysisContent"></div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Reflection -->
+                <div class="step-card" id="step2">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <h3 class="step-title">Write Your Reflection</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="reflection">Based on the analysis above, reflect on your learning process and growth</label>
+                        <textarea 
+                            class="form-textarea" 
+                            id="reflection" 
+                            placeholder="Consider: What specific misconceptions did you have? How will you approach similar problems differently? What does this teach you about learning from challenges?"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="assessReflection()" disabled>
+                        <span id="assessText">Get Reflection Assessment</span>
+                        <div class="spinner" id="assessSpinner" style="display: none;"></div>
+                    </button>
+                    
+                    <div class="ai-response" id="assessmentResponse">
+                        <h4>📝 Professor's Assessment</h4>
+                        <div id="assessmentContent"></div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Action Planning -->
+                <div class="step-card" id="step3">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <h3 class="step-title">Create Your Action Plan</h3>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="actionPlan">Develop specific strategies for future learning</label>
+                        <textarea 
+                            class="form-textarea" 
+                            id="actionPlan" 
+                            placeholder="Based on the feedback, what specific steps will you take to improve? How will you apply these insights to future case analyses or similar challenges?"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="finalizeSession()" disabled>
+                        <span id="finalizeText">Complete Learning Session</span>
+                        <div class="spinner" id="finalizeSpinner" style="display: none;"></div>
+                    </button>
+                    
+                    <div class="ai-response" id="finalResponse">
+                        <h4>🎯 Session Summary</h4>
+                        <div id="finalContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tips-section">
+                <h4>💡 Tips for Effective Reflection</h4>
+                <ul class="tips-list">
+                    <li>Be specific about what you found challenging and why</li>
+                    <li>Consider how this relates to broader business concepts and case analysis skills</li>
+                    <li>Think about process, not just outcomes - how can you improve your approach?</li>
+                    <li>Connect your learning to Ivey's case-based methodology</li>
+                    <li>Focus on growth opportunities rather than just mistakes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
