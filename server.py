@@ -90,7 +90,97 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     })
 
-@app.route("/analyze_challenge", methods=["POST"])
+@app.route("/chat", methods=["POST"])
+def chat():
+    """
+    Main conversational chat endpoint with memory
+    """
+    print("[DEBUG] Chat endpoint called")
+    
+    try:
+        data = request.json
+        print(f"[DEBUG] Request data: {data}")
+        
+        message = data.get("message", "")
+        session_id = data.get("session_id", "default")
+        frontend_history = data.get("conversation_history", [])
+        
+        print(f"[DEBUG] Message: {message[:100]}...")
+        print(f"[DEBUG] Session ID: {session_id}")
+        print(f"[DEBUG] Frontend history length: {len(frontend_history)}")
+        
+        if not message:
+            print("[ERROR] No message provided")
+            return jsonify({"error": "No message provided"}), 400
+        
+        # Initialize session history if needed
+        if session_id not in conversation_histories:
+            conversation_histories[session_id] = []
+        
+        # Use frontend history if available, otherwise use stored history
+        chat_history = frontend_history if frontend_history else conversation_histories[session_id]
+        
+        # System prompt for conversational interaction
+        system_prompt = """You are Professor Claude, a distinguished faculty professor at Ivey Business School, specializing in case-based learning and growth mindset development. You are having a natural conversation with a student to help them develop resilience and learn from their challenges.
+
+Your approach:
+- Use Ivey's pedagogical methods: case-based analysis, practical application, collaborative learning
+- Focus on growth mindset development - help students see challenges as opportunities
+- Be conversational, supportive, and professorial (not overly formal)
+- Ask follow-up questions to deepen understanding
+- Connect challenges to broader business concepts when relevant
+- Encourage reflection and self-awareness
+- Provide specific, actionable guidance
+
+Conversation style:
+- Respond naturally as if speaking with a student in your office
+- Show genuine interest in their learning process
+- Use examples from business cases when helpful
+- Be encouraging but also intellectually rigorous
+- Ask thoughtful questions that promote deeper thinking
+
+Remember: This is an ongoing conversation. Build on what you've discussed before and help the student develop throughout your interaction."""
+
+        # Build messages array with conversation history
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add conversation history
+        for msg in chat_history[-10:]:  # Keep last 10 exchanges for context
+            messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+        
+        # Add current message
+        messages.append({"role": "user", "content": message})
+        
+        print(f"[DEBUG] Sending {len(messages)} messages to Claude...")
+        response_text = call_claude_api(messages)
+        print("[DEBUG] Claude API call successful")
+        
+        # Store conversation in session history
+        conversation_histories[session_id].extend([
+            {"role": "user", "content": message, "timestamp": datetime.now().isoformat()},
+            {"role": "assistant", "content": response_text, "timestamp": datetime.now().isoformat()}
+        ])
+        
+        print(f"[DEBUG] Stored conversation history for session {session_id}")
+        print(f"[DEBUG] Total messages in session: {len(conversation_histories[session_id])}")
+        
+        return jsonify({
+            "response": response_text,
+            "session_id": session_id,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Exception in chat: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        return jsonify({
+            "error": "Chat failed",
+            "message": "I'm having trouble responding right now. Please try again.",
+            "details": str(e)
+        }), 500
 def analyze_challenge():
     print("[DEBUG] Analyze challenge endpoint called")
     

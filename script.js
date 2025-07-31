@@ -1,51 +1,72 @@
 // Application state
-let currentStep = 1;
 let conversationHistory = [];
+let sessionId = 'session_' + Date.now(); // Unique session ID
 
-// API Configuration - Updated to point to your Render backend
+// API Configuration
 const API_BASE_URL = 'https://growth-mindset.onrender.com';
 
-// Progress tracking
-function updateProgress() {
-    const progress = (currentStep / 3) * 100;
-    document.getElementById('progressFill').style.width = progress + '%';
+// Format current time
+function getCurrentTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Step management
-function activateStep(stepNumber) {
-    // Deactivate all steps
-    document.querySelectorAll('.step-card').forEach(card => {
-        card.classList.remove('active');
-    });
+// Add message to chat UI
+function addMessage(content, isStudent = false) {
+    const chatMessages = document.getElementById('chatMessages');
     
-    // Activate current step
-    document.getElementById(`step${stepNumber}`).classList.add('active');
-    currentStep = stepNumber;
-    updateProgress();
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isStudent ? 'student-message' : 'professor-message'}`;
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${isStudent ? '' : '🎓'}</div>
+        <div class="message-content">
+            <div class="message-header">
+                <span class="message-sender">${isStudent ? 'You' : 'Professor Claude'}</span>
+                <span class="message-time">${getCurrentTime()}</span>
+            </div>
+            <div class="message-text">${content}</div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Step 1: Analyze Challenge - UPDATED TO USE SPECIALIZED ENDPOINT
-async function analyzeChallenge() {
-    const challenge = document.getElementById('challenge').value.trim();
+// Send message to AI
+async function sendMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const sendButton = document.getElementById('sendButton');
+    const sendText = document.getElementById('sendText');
+    const sendSpinner = document.getElementById('sendSpinner');
     
-    if (!challenge) {
-        alert('Please describe your learning challenge first.');
+    const message = chatInput.value.trim();
+    
+    if (!message) {
         return;
     }
-
-    // Show loading state
-    document.getElementById('analyzeText').textContent = 'Analyzing...';
-    document.getElementById('analyzeSpinner').style.display = 'block';
+    
+    // Add user message to UI
+    addMessage(message, true);
+    
+    // Clear input and show loading
+    chatInput.value = '';
+    sendButton.disabled = true;
+    sendText.textContent = 'Thinking...';
+    sendSpinner.style.display = 'block';
     
     try {
-        const response = await fetch(`${API_BASE_URL}/analyze_challenge`, {
+        // Send to API
+        const response = await fetch(`${API_BASE_URL}/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                challenge: challenge,
-                session_id: 'default'
+                message: message,
+                session_id: sessionId,
+                conversation_history: conversationHistory
             })
         });
 
@@ -55,158 +76,44 @@ async function analyzeChallenge() {
 
         const data = await response.json();
         
-        // Store in conversation history
+        // Add AI response to UI
+        addMessage(data.response, false);
+        
+        // Update conversation history
         conversationHistory.push(
-            { role: "user", content: `Student challenge: ${challenge}` },
+            { role: "user", content: message },
             { role: "assistant", content: data.response }
         );
-
-        // Display response
-        document.getElementById('analysisContent').innerHTML = formatResponse(data.response);
-        document.getElementById('analysisResponse').classList.add('show');
         
-        // Activate next step
-        setTimeout(() => {
-            activateStep(2);
-            document.querySelector('#step2 button').disabled = false;
-        }, 1000);
-
     } catch (error) {
-        console.error('Error analyzing challenge:', error);
-        alert('There was an error analyzing your challenge. Please try again.');
+        console.error('Error sending message:', error);
+        addMessage("I apologize, but I'm having trouble connecting right now. Please try again in a moment.", false);
     } finally {
         // Reset button state
-        document.getElementById('analyzeText').textContent = 'Get AI Analysis';
-        document.getElementById('analyzeSpinner').style.display = 'none';
+        sendButton.disabled = false;
+        sendText.textContent = 'Send';
+        sendSpinner.style.display = 'none';
+        chatInput.focus();
     }
 }
 
-// Step 2: Assess Reflection - UPDATED TO USE SPECIALIZED ENDPOINT
-async function assessReflection() {
-    const reflection = document.getElementById('reflection').value.trim();
-    
-    if (!reflection) {
-        alert('Please write your reflection first.');
-        return;
-    }
-
-    // Show loading state
-    document.getElementById('assessText').textContent = 'Assessing...';
-    document.getElementById('assessSpinner').style.display = 'block';
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/assess_reflection`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                reflection: reflection,
-                session_id: 'default'
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Store in conversation history
-        conversationHistory.push(
-            { role: "user", content: `Student reflection: ${reflection}` },
-            { role: "assistant", content: data.response }
-        );
-
-        // Display response
-        document.getElementById('assessmentContent').innerHTML = formatResponse(data.response);
-        document.getElementById('assessmentResponse').classList.add('show');
-        
-        // Activate next step
-        setTimeout(() => {
-            activateStep(3);
-            document.querySelector('#step3 button').disabled = false;
-        }, 1000);
-
-    } catch (error) {
-        console.error('Error assessing reflection:', error);
-        alert('There was an error assessing your reflection. Please try again.');
-    } finally {
-        // Reset button state
-        document.getElementById('assessText').textContent = 'Get Reflection Assessment';
-        document.getElementById('assessSpinner').style.display = 'none';
-    }
-}
-
-// Step 3: Finalize Session - UPDATED TO USE SPECIALIZED ENDPOINT
-async function finalizeSession() {
-    const actionPlan = document.getElementById('actionPlan').value.trim();
-    
-    if (!actionPlan) {
-        alert('Please create your action plan first.');
-        return;
-    }
-
-    // Show loading state
-    document.getElementById('finalizeText').textContent = 'Finalizing...';
-    document.getElementById('finalizeSpinner').style.display = 'block';
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/finalize_session`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action_plan: actionPlan,
-                session_id: 'default'
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Store in conversation history
-        conversationHistory.push(
-            { role: "user", content: `Student action plan: ${actionPlan}` },
-            { role: "assistant", content: data.response }
-        );
-
-        // Display response
-        document.getElementById('finalContent').innerHTML = formatResponse(data.response);
-        document.getElementById('finalResponse').classList.add('show');
-        
-        // Complete progress
-        updateProgress();
-
-    } catch (error) {
-        console.error('Error finalizing session:', error);
-        alert('There was an error finalizing your session. Please try again.');
-    } finally {
-        // Reset button state
-        document.getElementById('finalizeText').textContent = 'Complete Learning Session';
-        document.getElementById('finalizeSpinner').style.display = 'none';
-    }
-}
-
-// Format response text for better display
-function formatResponse(text) {
-    // Convert line breaks to HTML
-    return text.replace(/\n/g, '<br>');
-}
-
-// Initialize the application
+// Handle Enter key in textarea
 document.addEventListener('DOMContentLoaded', function() {
-    updateProgress();
+    const chatInput = document.getElementById('chatInput');
     
-    // Enable textarea auto-resize
-    document.querySelectorAll('.form-textarea').forEach(textarea => {
-        textarea.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
+    
+    // Auto-resize textarea
+    chatInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+    
+    // Focus on input
+    chatInput.focus();
 });
