@@ -142,7 +142,7 @@ Be supportive, insightful, and professorial in tone. Encourage students to see c
 3. What they can learn from this experience using a growth mindset approach
 4. Specific areas they should focus on for improvement
 
-Student's challenge: "{challenge}"
+Student's challenge: \"{challenge}\"
 
 Please provide a thoughtful, professorial response that helps them understand their learning process and sets them up for effective reflection."""
 
